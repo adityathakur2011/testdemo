@@ -1,82 +1,53 @@
+Here is a complete example of a login REST API implemented using Python and the Flask framework. The following code snippet illustrates how to create a basic login endpoint, including JWT (JSON Web Tokens) for authentication:
+
 ```python
 from flask import Flask, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
-import datetime
+from werkzeug.security import check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 
 app = Flask(__name__)
 
-# Secret key to encode and decode JWTs
-app.config['SECRET_KEY'] = 'your_secret_key'
+# Configure your secret key
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Replace with a strong secret key in production
+jwt = JWTManager(app)
 
-# Dummy user data
+# Dummy user data, typically this would be stored in a database
 users = {
-    "user1": generate_password_hash("password1"),
-    "user2": generate_password_hash("password2")
-}
-
-def authenticate(username, password):
-    """Authenticate user credentials."""
-    if username in users and check_password_hash(users[username], password):
-        return True
-    return False
-
-def create_token(username):
-    """Creates a JWT token for a valid user."""
-    payload = {
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
-        'iat': datetime.datetime.utcnow(),
-        'sub': username
+    "user1": {
+        "password": "pbkdf2:sha256:150000$Vp2E5KBD$b0252d5b5e916ad7d0cedaf0ddb4a40b295ae3fdcc8c85415d5b771907e97f35"  # hashed version of 'password123'
     }
-    return jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+}
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Login API endpoint."""
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
+    # Parse the request body
+    data = request.get_json()
+    username = data.get('username', None)
+    password = data.get('password', None)
 
-    if not username or not password:
-        return jsonify({'message': 'Username and password are required!'}), 400
+    # Verify that the username and password exist
+    if username not in users or not check_password_hash(users[username]['password'], password):
+        return jsonify({"msg": "Bad username or password"}), 401
 
-    if authenticate(username, password):
-        token = create_token(username)
-        return jsonify({'message': 'Login successful!', 'token': token.decode('UTF-8')}), 200
+    # Create a new access token
+    access_token = create_access_token(identity=username)
+    return jsonify(access_token=access_token), 200
 
-    return jsonify({'message': 'Invalid username or password!'}), 401
-
-def verify_token(token):
-    """Verify the given JWT token."""
-    try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        return payload['sub']
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
-
+# Secure endpoint example
 @app.route('/protected', methods=['GET'])
+@jwt_required()  # Require a valid access token to access this route
 def protected():
-    """A protected endpoint which requires JWT."""
-    token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'message': 'Token is missing!'}), 403
-
-    username = verify_token(token)
-
-    if not username:
-        return jsonify({'message': 'Invalid or expired token!'}), 403
-
-    return jsonify({'message': f'Hello, {username}! This is a protected resource.'})
+    return jsonify({"msg": "This is protected data"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
 
-- First, this code uses Flask to set up a basic API.
-- Passwords are hashed using Werkzeug’s security utilities. 
-- JWTs (JSON Web Tokens) are used for authentication; these are created when login credentials are valid and must be provided for accessing protected routes.
-- `/login` endpoint authenticates the user and issues a JWT on success.
-- `/protected` endpoint demonstrates a protected resource by requiring a valid JWT for access.
-- The token is encoded with the username and an expiration time of one day.
+**Key Concepts:**
+1. **Flask:** Flask is a lightweight WSGI web application framework in Python. This example uses Flask to set up the web server and routes.
+2. **JWT (JSON Web Tokens):** Utilized for securely transmitting information between parties. JWTs are signed to ensure that the claims cannot be altered after the token is issued.
+3. **Flask-JWT-Extended:** Integrates JWT into a Flask application. The `create_access_token` function generates a token, and `jwt_required` ensures that endpoints are protected.
+4. **Werkzeug Security:** Used to hash passwords securely with `check_password_hash` to compare hashed passwords safely.
+5. **Dummy user data:** In a production environment, user information should be stored and retrieved from a secure database.
+
+**Note:** The JWT secret key should be stored securely and should be different for production use. Passwords should always be hashed before storage, and never stored or transmitted in plain text.
