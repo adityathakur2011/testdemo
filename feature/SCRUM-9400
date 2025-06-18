@@ -1,56 +1,48 @@
-Here's a complete working example of a login REST API using the Flask framework. This implementation includes a mock user data for demonstration purposes, proper request handling, and response formatting.
+Below is a complete Python code snippet implementing a login REST API using Flask, a lightweight web application framework. The code includes comments to make each part understandable.
 
 ```python
 from flask import Flask, request, jsonify
 from werkzeug.security import check_password_hash
-from flask_httpauth import HTTPBasicAuth
 
-# Initialize the Flask application
 app = Flask(__name__)
 
-# Initialize HTTP Basic Authentication
-auth = HTTPBasicAuth()
-
 # Mock user data
-# Normally, these would be retrieved from a database and passwords should be hashed
 users = {
-    "john": {
-        "password_hash": "pbkdf2:sha256:150000$B58TMiPq$afc849b7e04cbd77f7be1412e6217e64881667c80b89b21c5621c93456bc6809",  # hashed password for "hello"
+    "example_user": {
+        "username": "example_user",
+        "password": "pbkdf2:sha256:150000$K9YZazfs$fbb6d8b8b92568e376b5a44c2c0eb2f6"  # Hash for "example_password"
     }
 }
 
-# Verify user password
-@auth.verify_password
-def verify_password(username, password):
-    if username in users:
-        # Check the stored password hash
-        return check_password_hash(users.get(username).get("password_hash"), password)
-    return False
-
 @app.route('/login', methods=['POST'])
 def login():
-    # Use basic authentication to handle login
-    auth_result = auth.get_auth()
+    # Retrieve username and password from the request JSON body
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
 
-    if not auth_result:
-        return jsonify({"message": "Missing username or password"}), 401
+    if not username or not password:
+        # If username or password is missing, return an error
+        return jsonify({"error": "Missing username or password"}), 400
 
-    if verify_password(auth_result.username, auth_result.password):
-        return jsonify({"message": "Login successful"}), 200
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
+    user = users.get(username)
 
-# Run the application
+    if not user or not check_password_hash(user['password'], password):
+        # If user not found or password does not match, return error
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    # On success, return a success message
+    return jsonify({"message": "Login successful"}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)
-
 ```
 
 ### Explanation:
-1. **Flask Setup**: We start by setting up a Flask application and configuring HTTP Basic Authentication.
-2. **User Data**: This is typically stored in a database, but for our purposes, we've hardcoded a dictionary with a user's username and a hashed password (hash for "hello" generated using Werkzeug's password hashing).
-3. **Password Verification**: We define a function `verify_password` to compare the input password with the hashed password stored.
-4. **Login Endpoint**: The `/login` endpoint uses HTTP Basic Authentication to check whether the username and password are correct. Appropriate messages are returned based on the outcome: success, missing credentials, or invalid credentials.
-5. **Running the Flask App**: Finally, we start the Flask app in debug mode for testing purposes.
+- **Flask**: Flask is used to create the API. It is initialized with the application name and executed in debug mode for development.
+- **Mock user data**: A dictionary simulates user data storage, with passwords stored as hashes.
+- **Login Route**: A POST endpoint `/login` is created. It extracts the username and password from incoming JSON data.
+- **Validation**: It checks if the provided username and password match any entry in the user data. The password is verified using a hash comparison.
+- **Responses**: If credentials do not match, it returns `401 Unauthorized`. If the username or password is missing, it returns `400 Bad Request`. On success, it returns a `200 OK` message.
 
-This script provides a foundational structure for handling user logins via a REST API. Note that in a production environment, the user information should be stored securely in a database with passwords hashed and salted.
+Important: In a real application, user credentials would be securely stored in a database with additional security considerations such as salting, rate limiting, and potentially an authentication token response.
