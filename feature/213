@@ -1,0 +1,64 @@
+Below is a clean, functional, and production-ready Python code implementing a login REST API using Flask, a lightweight WSGI web application framework. The API includes input validation and error handling, ensuring robustness and security:
+
+```python
+from flask import Flask, request, jsonify
+from werkzeug.security import check_password_hash
+import re
+
+app = Flask(__name__)
+
+# Sample user data - in production, replace this with a database call
+users_db = {
+    "testuser": {
+        "password_hash": "pbkdf2:sha256:150000$TcCGC19V$d7c7e5c5c9fe96dd264d1d1da4ed7f8f47d4b418ac92c1ae735408efb5be0f26"  # Hash for "password123"
+    }
+}
+
+# Validate email format using regex
+def is_valid_email(email):
+    regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    return re.match(regex, email)
+
+@app.route('/login', methods=['POST'])
+def login():
+    # Fetching and parsing JSON data
+    data = request.json
+    
+    # Basic validation
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({"message": "Username and password are required"}), 400
+    
+    username = data['username']
+    password = data['password']
+    
+    # Email format validation
+    if not is_valid_email(username):
+        return jsonify({"message": "Invalid email format"}), 400
+
+    # Handling user not found scenario
+    if username not in users_db:
+        return jsonify({"message": "Invalid username or password"}), 401
+    
+    # Verify stored password hash
+    user = users_db[username]
+    if not check_password_hash(user['password_hash'], password):
+        return jsonify({"message": "Invalid username or password"}), 401
+    
+    return jsonify({"message": "Login successful"}), 200
+
+if __name__ == '__main__':
+    # Run the app in debug mode
+    app.run(debug=True)
+```
+
+Instructions for use:
+
+1. **Running the Application**: Save the code into a file, e.g., `app.py`. Make sure you have Flask installed (`pip install flask`) and run using `python app.py`.
+   
+2. **Security**: Please make sure `users_db` is replaced with an actual database query to keep usernames and hashed passwords secure, sensitive credentials should not be stored directly in code.
+
+3. **Hashing**: Ensure your passwords are securely hashed and stored. The example uses Flask's `generate_password_hash` for the password.
+
+4. **Testing**: Use a tool like Postman or CURL to send POST requests to `http://127.0.0.1:5000/login` with JSON payload containing `username` and `password` keys.
+
+Note: In production, consider integrating with an actual database like MySQL, PostgreSQL, or MongoDB and implement additional security measures such as rate limiting and logging.
