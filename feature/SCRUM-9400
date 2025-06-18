@@ -1,52 +1,54 @@
+Below is a complete code snippet implementing a login REST API using Python with the Flask framework. The code includes detailed comments to help understand how each part functions. 
+
 ```python
 from flask import Flask, request, jsonify
 from werkzeug.security import check_password_hash
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['TOKEN_EXPIRATION'] = 3600  # 1 hour token expiration
 
-# Sample user data, typically this would come from a database
+# Simulated users database
 users = {
-    'john_doe': 'pbkdf2:sha256:150000$gZ1kL1OK$c6f2c8e...f3e8',  # hashed password
+    "user1": {"password": "pbkdf2:sha256:150000$K8voku3O$139bba5b3c0..."},
+    # Store passwords as hashed strings using werkzeug.security
 }
-
-def verify_user(username, password):
-    """Verify if the provided username and password match."""
-    if username in users:
-        # Compare the provided password with the stored hashed password
-        return check_password_hash(users[username], password)
-    return False
-
-def generate_auth_token(username):
-    """Generate a token for the specified user."""
-    s = Serializer(app.config['SECRET_KEY'], expires_in=app.config['TOKEN_EXPIRATION'])
-    return s.dumps({'username': username}).decode('utf-8')
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Handle login requests and return an auth token if credentials are valid."""
-    data = request.get_json()
-    
-    username = data.get('username')
-    password = data.get('password')
+    # Get username and password from the request JSON
+    data = request.json
 
-    if not username or not password:
-        return jsonify({'message': 'Missing username or password'}), 400
-    
-    if verify_user(username, password):
-        token = generate_auth_token(username)
-        return jsonify({'token': token}), 200
-    else:
-        return jsonify({'message': 'Invalid username or password'}), 401
+    if not data or not data.get('username') or not data.get('password'):
+        # If request does not contain the necessary fields, return a bad request response
+        return jsonify({"error": "Missing username or password"}), 400
+
+    username = data['username']
+    password = data['password']
+
+    # Check if user exists
+    user = users.get(username)
+    if not user:
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    # Verify password using check_password_hash function
+    if not check_password_hash(user['password'], password):
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    # If the password is correct, return a success message
+    return jsonify({"message": "Login successful"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
 
-- The `Flask` application is initialized and configured with a secret key.
-- A sample user dictionary contains usernames mapped to hashed passwords, which you would normally store in and query from a database.
-- The `verify_user()` function checks if the username exists and if the provided password matches the stored hash.
-- `generate_auth_token()` creates a token using itsdangerous library which is valid for a specified duration.
-- The `/login` route handles `POST` requests. It checks whether the username and password are provided and valid. If they are, it responds with a token. Otherwise, it sends an error response.
+### Explanation:
+- **Flask**: A micro web framework for Python used to build web applications quickly.
+- **request**: To handle incoming API requests.
+- **jsonify**: Utility function to return responses in JSON format.
+- **check_password_hash**: Used to safely verify user password against a hashed password stored in the database.
+- **users dictionary**: Simulates a users database storing a single user with hashed password. In a production setup, you'd retrieve these details from a real database.
+- **login() function**: The core logic for the login API, takes `username` and `password` from the JSON request body, checks their existence, and verifies them against stored credentials.
+- **Error responses**: Proper error responses are sent for missing fields or invalid credentials, following HTTP status codes (400 for bad request, 401 for unauthorized).
+
+Note: In a real-world application, make sure to use secure configurations and handle sessions or tokens for authenticated requests.
+
+Make sure Flask and its dependencies are installed, which you can do by running `pip install Flask`. Also, remember to hash passwords using a strong hash function in actual deployment.
