@@ -4,21 +4,21 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
-users = {
-    "username": "hashed_password"
-}
+# Dummy user data
+users = {"admin": "pbkdf2:sha256:150000$xyz$abcdef12345"}
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    if 'username' in data and 'password' in data:
-        username = data['username']
-        password = data['password']
-        if username in users and check_password_hash(users[username], password):
-            return jsonify({"msg": "Logged in!"}), 200
-    return jsonify({"msg": "Unauthorized"}), 401
+    username = data.get('username')
+    password = data.get('password')
+
+    if username in users and check_password_hash(users[username], password):
+        return jsonify({"message": "Login successful!"}), 200
+    return jsonify({"error": "Invalid credentials"}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
-This code defines a simple RESTful API using Flask. It performs user login verification by checking against stored, hashed passwords and responds accordingly. Make sure to have Flask and Werkzeug installed and replace `"username": "hashed_password"` with actual values.
+
+This code sets up a basic Flask REST API with a `/login` endpoint that checks the username and password against a preset hash using `werkzeug.security.check_password_hash`. The application returns a success message if the credentials are correct and an error if they fail.
