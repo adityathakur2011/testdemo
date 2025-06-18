@@ -1,48 +1,52 @@
-Below is a complete Python code snippet implementing a login REST API using Flask, a lightweight web application framework. The code includes comments to make each part understandable.
-
 ```python
 from flask import Flask, request, jsonify
 from werkzeug.security import check_password_hash
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['TOKEN_EXPIRATION'] = 3600  # 1 hour token expiration
 
-# Mock user data
+# Sample user data, typically this would come from a database
 users = {
-    "example_user": {
-        "username": "example_user",
-        "password": "pbkdf2:sha256:150000$K9YZazfs$fbb6d8b8b92568e376b5a44c2c0eb2f6"  # Hash for "example_password"
-    }
+    'john_doe': 'pbkdf2:sha256:150000$gZ1kL1OK$c6f2c8e...f3e8',  # hashed password
 }
+
+def verify_user(username, password):
+    """Verify if the provided username and password match."""
+    if username in users:
+        # Compare the provided password with the stored hashed password
+        return check_password_hash(users[username], password)
+    return False
+
+def generate_auth_token(username):
+    """Generate a token for the specified user."""
+    s = Serializer(app.config['SECRET_KEY'], expires_in=app.config['TOKEN_EXPIRATION'])
+    return s.dumps({'username': username}).decode('utf-8')
 
 @app.route('/login', methods=['POST'])
 def login():
-    # Retrieve username and password from the request JSON body
-    data = request.json
+    """Handle login requests and return an auth token if credentials are valid."""
+    data = request.get_json()
+    
     username = data.get('username')
     password = data.get('password')
 
     if not username or not password:
-        # If username or password is missing, return an error
-        return jsonify({"error": "Missing username or password"}), 400
-
-    user = users.get(username)
-
-    if not user or not check_password_hash(user['password'], password):
-        # If user not found or password does not match, return error
-        return jsonify({"error": "Invalid username or password"}), 401
-
-    # On success, return a success message
-    return jsonify({"message": "Login successful"}), 200
+        return jsonify({'message': 'Missing username or password'}), 400
+    
+    if verify_user(username, password):
+        token = generate_auth_token(username)
+        return jsonify({'token': token}), 200
+    else:
+        return jsonify({'message': 'Invalid username or password'}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
 
-### Explanation:
-- **Flask**: Flask is used to create the API. It is initialized with the application name and executed in debug mode for development.
-- **Mock user data**: A dictionary simulates user data storage, with passwords stored as hashes.
-- **Login Route**: A POST endpoint `/login` is created. It extracts the username and password from incoming JSON data.
-- **Validation**: It checks if the provided username and password match any entry in the user data. The password is verified using a hash comparison.
-- **Responses**: If credentials do not match, it returns `401 Unauthorized`. If the username or password is missing, it returns `400 Bad Request`. On success, it returns a `200 OK` message.
-
-Important: In a real application, user credentials would be securely stored in a database with additional security considerations such as salting, rate limiting, and potentially an authentication token response.
+- The `Flask` application is initialized and configured with a secret key.
+- A sample user dictionary contains usernames mapped to hashed passwords, which you would normally store in and query from a database.
+- The `verify_user()` function checks if the username exists and if the provided password matches the stored hash.
+- `generate_auth_token()` creates a token using itsdangerous library which is valid for a specified duration.
+- The `/login` route handles `POST` requests. It checks whether the username and password are provided and valid. If they are, it responds with a token. Otherwise, it sends an error response.
