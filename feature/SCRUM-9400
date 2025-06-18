@@ -1,55 +1,31 @@
-Here's a complete Python code snippet to implement a login REST API using the Flask framework. This example includes basic user authentication with hardcoded credentials, for simplicity. In a production environment, user credentials would typically be stored in a secure database.
-
 ```python
-from flask import Flask, request, jsonify, make_response
-from flask.views import MethodView
-import json
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 
-# Simulating a database of users
-users_db = {
-    "user1": generate_password_hash("password123", method='sha256'),
-    "user2": generate_password_hash("mypassword", method='sha256')
+# Dummy user data
+users = {
+    "user1": "pbkdf2:sha256:150000$aHashedPassword",  # Prehashed password
 }
 
-class LoginAPI(MethodView):
-    def post(self):
-        # Parse the JSON request
-        data = request.get_json()
-        if not data:
-            return make_response(jsonify({"message": "Invalid input"}), 400)
-        
-        username = data.get('username')
-        password = data.get('password')
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
 
-        if not username or not password:
-            return make_response(jsonify({"message": "Username and password required"}), 400)
-        
-        # Check if the user exists in the simulated database
-        if username in users_db and check_password_hash(users_db[username], password):
-            return make_response(jsonify({"message": "Login successful"}), 200)
-        else:
-            return make_response(jsonify({"message": "Invalid username or password"}), 401)
-
-# Register the LoginAPI as a view
-login_view = LoginAPI.as_view('login')
-app.add_url_rule('/login', view_func=login_view, methods=['POST'])
+    if username not in users:
+        return jsonify({"message": "User not found"}), 404
+    
+    # Verify password
+    if check_password_hash(users[username], password):
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
 
 if __name__ == '__main__':
-    # Run the Flask app, disable debug mode in production
     app.run(debug=True)
 ```
 
-**Explanation:**
-1. **Flask Setup:** The script uses Flask, a lightweight WSGI web application framework.
-2. **User Database:** For demonstration, user credentials are stored in a dictionary (`users_db`) with passwords hashed.
-3. **Endpoint Definition:** A class-based view (`LoginAPI`) is defined to handle POST requests at the `/login` endpoint.
-4. **Request Handling:** Request data is expected as JSON. The code checks for valid credentials against the simulated database using secure password hashing.
-5. **Responses:** Depending on the outcome, appropriate JSON responses with HTTP status codes are returned.
-6. **Run Server:** The app runs on the local server with debugging enabled. Disable debug mode for production environments.
-
-This snippet is a simple demonstration of a login REST API. For production use, ensure that you:
-- Use a proper database for storing user information.
-- Implement additional security measures like rate limiting, secure session management, and more sophisticated error handling.
+This Python code uses Flask to create a REST API endpoint for login. It checks the username against stored credentials and verifies passwords using `werkzeug.security`. The application returns appropriate JSON responses for user authentication outcomes.
