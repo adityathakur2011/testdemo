@@ -1,0 +1,120 @@
+To provide a smooth and fast login experience, we need to optimize our login API for speed. Here is a Python code snippet using FastAPI, a modern, fast (high-performance), web framework for building APIs with Python 3.7+ based on standard Python type hints.
+
+```python
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from datetime import datetime, timedelta
+from typing import Optional
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+# To handle security details
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# Dummy user database
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "$2b$12$E9.N1R1ovQyQ8OJ4y7IueO9E9vf5VM1N8xMUK1LNOEj6bQW/uFgI6",  # bcrypt hashed "password"
+        "disabled": False,
+    }
+}
+
+# Secret key to encode/decode JWT
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class User(BaseModel):
+    username: str
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    disabled: Optional[bool] = None
+
+class UserInDB(User):
+    hashed_password: str
+
+app = FastAPI()
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
+
+def authenticate_user(fake_db, username: str, password: str):
+    user = get_user(fake_db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me/", response_model=User)
+async def read_users_me(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = get_user(fake_users_db, username=username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+```
+
+### Key Points:
+- **FastAPI**: Utilized for its speed and ability to handle asynchronous operations efficiently, which makes it ideal for a login API where response times are crucial.
+- **JWT**: JSON Web Tokens are employed for stateless user authentication, offering both security and performance benefits.
+- **Password Hashing**: Implemented using `passlib` to secure user passwords.
+- **Dependency Injection**: FastAPI provides built-in support for dependency injection, ensuring the code remains clean, organized, and testable.
+
+This implementation ensures a fast and reliable login API, fulfilling the acceptance criteria and providing users with a seamless login experience.
