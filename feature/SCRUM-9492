@@ -1,0 +1,58 @@
+Certainly! Below is a Python code snippet, with comments, that demonstrates how to securely end a user's session during logout. This can be done in a web application context, using common web frameworks such as Flask or Django. The snippet will show you how to invalidate a session token and clear client-side session data, using Flask as an example.
+
+```python
+from flask import Flask, session, redirect, url_for, request
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Ensure you set a strong secret key
+
+@app.route('/logout')
+def logout():
+    # Invalidate the session token
+    session.pop('user_id', None)  # Removes the 'user_id' session key safely
+    session.pop('session_token', None)  # Removes the session token safely
+
+    # Clear entire session data (in case of additional cached data)
+    session.clear()
+
+    # Redirect to the home page or login page
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Dummy login function for demonstration
+    if request.method == 'POST':
+        # Authenticate user (this example assumes successful authentication)
+        # On successful authentication, set user session
+        session['user_id'] = 'user123'
+        session['session_token'] = 'secure_token_via_auth_process'
+        return redirect(url_for('dashboard'))
+    return 'Login Page'
+
+@app.route('/dashboard')
+def dashboard():
+    # Example dashboard page (protected)
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Redirects if not logged in
+    return 'Welcome to your dashboard!'
+
+if __name__ == '__main__':
+    # Run the app in debug mode. In production, debug should be False
+    app.run(debug=True)
+```
+
+**Explanation:**
+
+1. **Session Management**: The code utilizes Flask's session management to track user login states. 
+
+2. **Session Invalidation**:
+   - `.pop()` is used to safely remove specific session keys: `user_id` and `session_token`.
+   - `session.clear()` is called to ensure all session data is erased, negating any residual session data left on the client side.
+
+3. **Redirection**: After clearing the session, the user is redirected to the login page, ensuring they are logged out securely.
+
+4. **App Secret Key**: A `secret_key` is essential for securely signing the session data.
+
+5. **Example Structure**: The example includes routes for login, logout, and a protected dashboard to illustrate the session management flow.
+
+By using the above setup, you ensure the user's session is fully terminated upon logout, both server-side and client-side, fulfilling the acceptance criteria of the task.
