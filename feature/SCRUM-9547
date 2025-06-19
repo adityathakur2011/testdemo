@@ -1,0 +1,52 @@
+```python
+class FoodMenu:
+    def __init__(self):
+        # Initialize the menu with some food items
+        self.menu_items = []
+
+    def add_item(self, name, price, description):
+        """
+        Adds a new food item to the menu.
+        :param name: str - The name of the food item
+        :param price: float - The price of the food item
+        :param description: str - A short description of the food item
+        """
+        item = {
+            'name': name,
+            'price': price,
+            'description': description
+        }
+        self.menu_items.append(item)
+
+    def view_menu(self):
+        """
+        Displays all available food items in the menu.
+        :return: str - Formatted string of the menu items
+        """
+        if not self.menu_items:
+            return "The menu is currently empty."
+
+        menu_display = "Food Menu:\n"
+        menu_display += "-" * 40 + "\n"
+        
+        for item in self.menu_items:
+            menu_display += f"Name: {item['name']}\n"
+            menu_display += f"Price: ${item['price']:.2f}\n"
+            menu_display += f"Description: {item['description']}\n"
+            menu_display += "-" * 40 + "\n"
+            
+        return menu_display
+
+
+# Example usage:
+if __name__ == "__main__":
+    menu = FoodMenu()
+    menu.add_item("Spaghetti Carbonara", 12.99, "Classic Italian pasta with creamy sauce")
+    menu.add_item("Caesar Salad", 8.99, "Fresh romaine lettuce with Caesar dressing")
+    menu.add_item("Margherita Pizza", 10.99, "Traditional pizza with mozzarella and basil")
+
+    # Viewing the food menu
+    print(menu.view_menu())
+```
+
+This code defines a `FoodMenu` class that allows you to add and view food items. You can initialize the menu, add items with their names, prices, and descriptions, and get a formatted string of the entire menu. The example at the bottom of the code demonstrates how to use the class to create and display a food menu.
