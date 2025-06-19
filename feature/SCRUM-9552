@@ -1,0 +1,82 @@
+Below is a complete Python code snippet that provides a simple user account creation feature for a food application. It includes the necessary components to create an account and outlines the user data to be stored.
+
+```python
+# Import necessary libraries
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash
+import re
+
+app = Flask(__name__)
+
+# In-memory database simulation
+users_db = {}
+
+def validate_email(email):
+    """ Validate the email address """
+    email_regex = r'^\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    return re.match(email_regex, email)
+
+def validate_password(password):
+    """ Ensure the password meets the criteria of at least 8 characters """
+    return len(password) >= 8
+
+@app.route('/create_account', methods=['POST'])
+def create_account():
+    """ End point to create a user account """
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    
+    # Basic validation
+    if not username or not email or not password:
+        return jsonify({'error': 'Username, email, and password are required'}), 400
+    
+    if not validate_email(email):
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    if not validate_password(password):
+        return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+    if username in users_db:
+        return jsonify({'error': 'User already exists'}), 409
+    
+    # Hash the password before saving
+    hashed_password = generate_password_hash(password)
+
+    # Save user details
+    users_db[username] = {
+        'email': email,
+        'password': hashed_password
+    }
+
+    return jsonify({'message': 'User created successfully'}), 201
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+### Explanation:
+1. **Libraries Used:**
+   - Flask: A web framework for Python to manage HTTP requests and responses.
+   - Werkzeug: Used to securely hash passwords before storing them in memory.
+   - `re`: A regular expression module for validating email formats.
+
+2. **Endpoint:**
+   - `/create_account`: It accepts JSON data using the POST method.
+
+3. **Validation:**
+   - It checks for required fields: username, email, and password.
+   - Email is validated using regular expressions for proper format.
+   - Password must contain a minimum of 8 characters.
+
+4. **Security:**
+   - Passwords are hashed using `generate_password_hash`.
+
+5. **Database Simulation:**
+   - `users_db` is a dictionary acting as an in-memory database to store user data.
+
+6. **Response Handling:**
+   - Handles various cases like missing data, invalid inputs, existing users, and returns appropriate HTTP status codes and messages.
+
+This code snippet efficiently handles account creation for a food application and adheres to best practices by ensuring security, validation, and error handling.
