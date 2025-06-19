@@ -1,0 +1,57 @@
+Below is a complete Python code snippet that implements a simple login feature using user credentials. It uses a dictionary to store users' data, simulating a database for demonstration purposes. The code ensures the structure is clear, includes comments for easy understanding, and follows best practices.
+
+```python
+# Import necessary libraries
+from typing import Dict
+
+# Mock database of users for demonstration
+users_db: Dict[str, str] = {
+    "user1": "password123",
+    "user2": "mypassword"
+}
+
+def login(username: str, password: str) -> bool:
+    """
+    Function to check user login credentials.
+    
+    :param username: The username of the user trying to log in.
+    :param password: The password of the user trying to log in.
+    :return: Boolean value indicating whether login was successful or not.
+    """
+    # Check if username exists in the database
+    if username in users_db:
+        # Validate password
+        if users_db[username] == password:
+            print(f"Welcome {username}!")
+            return True
+        else:
+            print("Incorrect password.")
+            return False
+    else:
+        print("Username not found.")
+        return False
+
+# Example usage
+if __name__ == "__main__":
+    # Sample username and password inputs
+    username_input = input("Enter your username: ")
+    password_input = input("Enter your password: ")
+
+    # Attempt to login
+    if login(username_input, password_input):
+        print("Login successful")
+    else:
+        print("Login failed")
+```
+
+### Explanation:
+
+1. **Import Statement**: The `typing` module is used to ensure type hints, making the code more readable and easier to understand.
+
+2. **Mock Database (`users_db`)**: For simplicity, this example uses a dictionary to simulate a database. Keys are usernames, and values are passwords.
+
+3. **`login` Function**: This function takes a username and password as input and checks them against the mock database. It returns `True` if credentials are correct, otherwise `False`.
+
+4. **Main Block**: It prompts the user to input their username and password, and calls the `login` function to validate credentials.
+
+This code is ready to be integrated into a larger application, providing a base for user authentication. For production use, you would integrate this with a real database and implement additional security measures such as password hashing and protection against SQL injection.
