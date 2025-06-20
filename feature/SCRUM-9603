@@ -1,0 +1,65 @@
+Below is a complete Python code snippet to implement a feature where a user can input basic patient information to create a profile for a clinical trial. The code uses a simple class to capture patient details and demonstrates an interactive way to gather input from the user.
+
+```python
+class PatientProfile:
+    def __init__(self, first_name, last_name, age, gender, contact_number, email):
+        """
+        Initialize a new patient profile with basic information.
+
+        :param first_name: str - The patient's first name
+        :param last_name: str - The patient's last name
+        :param age: int - The patient's age
+        :param gender: str - The patient's gender
+        :param contact_number: str - The patient's contact number
+        :param email: str - The patient's email address
+        """
+        self.first_name = first_name
+        self.last_name = last_name
+        self.age = age
+        self.gender = gender
+        self.contact_number = contact_number
+        self.email = email
+
+    def __str__(self):
+        """
+        String representation of the patient profile.
+
+        :return: str - A formatted string representing the patient information.
+        """
+        return (f"Patient Profile:\n"
+                f"Name: {self.first_name} {self.last_name}\n"
+                f"Age: {self.age}\n"
+                f"Gender: {self.gender}\n"
+                f"Contact Number: {self.contact_number}\n"
+                f"Email: {self.email}\n")
+
+def create_patient_profile():
+    """
+    Function to create a new patient profile by taking inputs from the user.
+
+    :return: None
+    """
+    print("Enter patient information:")
+    first_name = input("First Name: ")
+    last_name = input("Last Name: ")
+    age = int(input("Age: "))
+    gender = input("Gender: ")
+    contact_number = input("Contact Number: ")
+    email = input("Email: ")
+
+    # Create an instance of PatientProfile
+    patient = PatientProfile(first_name, last_name, age, gender, contact_number, email)
+
+    # Output the patient information
+    print("\nProfile successfully created!")
+    print(patient)
+
+# Example of usage
+if __name__ == "__main__":
+    create_patient_profile()
+```
+
+### Key Points:
+- **Class Implementation:** The `PatientProfile` class is used to store patient details. It includes an `__init__` method to initialize a new profile and a `__str__` method to provide a nicely formatted output.
+- **Data Input:** The `create_patient_profile` function interacts with the user to gather necessary information and create a `PatientProfile` object.
+- **Usage:** The code includes an example usage scenario under the `if __name__ == "__main__":` block, which allows running the script directly to input patient data.
