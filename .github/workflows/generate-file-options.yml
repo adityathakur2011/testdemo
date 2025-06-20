@@ -22,34 +22,29 @@ jobs:
           
           if [[ "${{ github.event.inputs.endpoint }}" == "Knowron Find Bugs" ]]; then
             echo "endpoint=users" >> $GITHUB_OUTPUT
-            echo "🔧 Mapping to endpoint: /users"
+            echo "🔧 Mapped to endpoint: /users"
           elif [[ "${{ github.event.inputs.endpoint }}" == "Knowron Create Documentation" ]]; then
             echo "endpoint=posts" >> $GITHUB_OUTPUT
-            echo "📝 Mapping to endpoint: /posts"
+            echo "📝 Mapped to endpoint: /posts"
           else
             echo "❌ Unknown selection!"
             exit 1
-          fi  # <-- THIS WAS MISSING!
+          fi
 
       - name: 📦 Install jq for JSON formatting
         run: |
           sudo apt-get update && sudo apt-get install -y jq
 
-      - name: 🔗 Call API and Display Response
+      - name: 🔗 Call API and Show Structured Response
         run: |
           URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
           echo "🌐 Calling API at: $URL"
 
           RESPONSE=$(curl --fail -s -X GET "$URL")
           if [ $? -ne 0 ]; then
-            echo "❌ Failed to call API"
+            echo "❌ API call failed"
             exit 1
           fi
           
-          echo "✅ API call successful!"
-          echo "📦 Raw Response:"
-          echo "$RESPONSE"
-
-          echo ""
-          echo "🧾 Pretty-Printed Response (first 20 lines):"
-          echo "$RESPONSE" | jq '.' | head -n 20
+          echo "✅ API Response (Structured):"
+          echo "$RESPONSE" | jq '.'
