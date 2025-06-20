@@ -1,0 +1,74 @@
+```python
+from flask import Flask, request, jsonify
+from werkzeug.security import generate_password_hash
+from itsdangerous import URLSafeTimedSerializer
+import re
+import sqlite3
+
+# Initialize the Flask application
+app = Flask(__name__)
+
+# Secret key for signing tokens
+app.config['SECRET_KEY'] = 'thisisaverysecretkey'  # This should be a more secure key in production
+
+# This will generate and decode tokens from user emails
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# Database setup function
+def init_db():
+    # Connect to SQLite database (or create it if it doesn't exist)
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    # Create a new table for users if it doesn't exist yet
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      email TEXT UNIQUE NOT NULL,
+                      password_hash TEXT NOT NULL)''')
+    conn.commit()
+    conn.close()
+
+# Email validation function
+def is_valid_email(email):
+    # Basic regex pattern for email validation
+    pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+    return re.match(pattern, email) is not None
+
+# Endpoint to register a new user
+@app.route('/register', methods=['POST'])
+def register():
+    # Retrieve email and password from the request
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    # Validate the email and password fields
+    if not email or not password:
+        return jsonify({"message": "Email and password are required!"}), 400
+
+    if not is_valid_email(email):
+        return jsonify({"message": "Invalid email address!"}), 400
+
+    # Hash the user's password for storage
+    password_hash = generate_password_hash(password)
+
+    # Connect to the database and try to insert the new user
+    try:
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (email, password_hash))
+        conn.commit()
+        return jsonify({"message": "User registered successfully."}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"message": "User with this email already exists!"}), 400
+    finally:
+        conn.close()
+
+# Initialize the database
+init_db()
+
+# Run the application
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+This code sets up a basic Flask application with an SQLite database for storing user information. It provides a `/register` endpoint for new users to sign up using their email and password. Passwords are securely hashed before storage, and basic email validation is performed. The database initialization creates the necessary user table if it doesn't exist. The application is run with `debug=True` for easy testing and debugging. This code snippet demonstrates a complete and functional implementation for registering users on a food application, adhering to best practices for security and data handling.
