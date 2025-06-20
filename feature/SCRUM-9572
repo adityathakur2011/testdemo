@@ -1,0 +1,62 @@
+```python
+from flask import Flask, render_template_string, request, redirect, url_for
+
+# Initialize the Flask application
+app = Flask(__name__)
+
+# HTML for the login page using Jinja2 templating
+login_page = """
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Login</title>
+  </head>
+  <body>
+    <div>
+      <h2>Login</h2>
+      <form method="POST" action="{{ url_for('login') }}">
+        <div>
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        <div>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <input type="submit" value="Login">
+      </form>
+    </div>
+  </body>
+</html>
+"""
+
+# Route for the login page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # Here you would add authentication logic
+        if username == "admin" and password == "admin":
+            # For simplicity, redirecting to login page 
+            # upon successful login - you can change this
+            return redirect(url_for('login')) 
+        
+    # Render the login page
+    return render_template_string(login_page)
+
+# Run the application
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+- **Using Flask**: Flask is a web framework for Python which is lightweight and easy to set up.
+- **GET and POST Request Handling**: The route `/login` allows for both `GET` and `POST` requests. If the request method is `POST`, it means the form has been submitted. Otherwise, the blank login form is shown.
+- **HTML Form**: The login form captures 'username' and 'password', using simple input fields and is styled minimally for demonstration purposes.
+- **Authentication Logic**: In the `login()` function, there's basic logic to authenticate a user with hardcoded credentials (`admin`/`admin`). This should typically involve checking credentials against a database. On "successful" login here, for demonstration, I just redirect to the same page.
+- **Debug Mode**: The application runs in debug mode which should be turned off in a production environment. 
+
+This code is structured to be clear, functional, and easily extendable for production use upon implementing a more secure authentication mechanism.
