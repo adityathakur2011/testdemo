@@ -1,0 +1,37 @@
+name: Call API For Respective Selection
+
+on:
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: 'Select the Knowron action to perform'
+        required: true
+        type: choice
+        options:
+          - Knowron Find Bugs
+          - Knowron Create Documentation
+
+jobs:
+  call-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine API Endpoint
+        id: map
+        run: |
+          echo "🧠 Selected action: '${{ github.event.inputs.endpoint }}'"
+          
+          # Map human-friendly input to actual API endpoint
+          if [[ "${{ github.event.inputs.endpoint }}" == "Knowron Find Bugs" ]]; then
+            echo "endpoint=users" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.endpoint }}" == "Knowron Create Documentation" ]]; then
+            echo "endpoint=posts" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Unknown option selected"
+            exit 1
+          fi
+
+      - name: Call DummyJSON API
+        run: |
+          URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
+          echo "🔗 Calling URL: $URL"
+          curl --fail -X GET "$URL"
