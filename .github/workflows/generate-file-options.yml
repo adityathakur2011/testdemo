@@ -29,12 +29,17 @@ jobs:
           else
             echo "❌ Unknown selection!"
             exit 1
+          fi  # <-- THIS WAS MISSING!
+
+      - name: 📦 Install jq for JSON formatting
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
 
       - name: 🔗 Call API and Display Response
         run: |
           URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
           echo "🌐 Calling API at: $URL"
-          
+
           RESPONSE=$(curl --fail -s -X GET "$URL")
           if [ $? -ne 0 ]; then
             echo "❌ Failed to call API"
@@ -48,11 +53,3 @@ jobs:
           echo ""
           echo "🧾 Pretty-Printed Response (first 20 lines):"
           echo "$RESPONSE" | jq '.' | head -n 20
-          
-        env:
-          # Install jq for pretty printing
-          JQ_PATH: /usr/bin/jq
-
-      - name: 📦 Install jq (if not preinstalled)
-        run: |
-          sudo apt-get update && sudo apt-get install -y jq
