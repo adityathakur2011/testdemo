@@ -1,0 +1,81 @@
+```python
+from flask import Flask, request, render_template, redirect, url_for, flash
+from itsdangerous import URLSafeTimedSerializer
+from werkzeug.security import generate_password_hash
+from flask_mail import Mail, Message
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Ensure you set a strong key for security
+
+# Configure email settings
+app.config['MAIL_SERVER'] = 'smtp.example.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = 'your_email@example.com'
+app.config['MAIL_PASSWORD'] = 'your_password'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)
+
+# Serializer for generating secure tokens
+ts = URLSafeTimedSerializer(app.secret_key)
+
+# Mock database
+users_db = {
+    'user@example.com': {'password': generate_password_hash('oldpassword')}
+}
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if request.method == 'POST':
+        email = request.form['email']
+        if email in users_db:
+            token = ts.dumps(email, salt='password-reset-salt')
+            reset_url = url_for('reset_password_with_token', token=token, _external=True)
+            msg = Message(subject="Password Reset Requested",
+                          body=f"Click the following link to reset your password: {reset_url}",
+                          sender=app.config['MAIL_USERNAME'],
+                          recipients=[email])
+            mail.send(msg)
+            flash('Password reset email sent', 'info')
+        else:
+            flash('Email not found', 'danger')
+        return redirect(url_for('reset_password_request'))
+
+    return render_template('reset_password_request.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password_with_token(token):
+    try:
+        email = ts.loads(token, salt='password-reset-salt', max_age=3600)
+    except:
+        flash('The password reset link is invalid or has expired', 'danger')
+        return redirect(url_for('reset_password_request'))
+
+    if request.method == 'POST':
+        new_password = request.form['password']
+        users_db[email]['password'] = generate_password_hash(new_password)
+        flash('Your password has been updated!', 'success')
+        return redirect(url_for('login'))  # Assuming there exists a login route
+
+    return render_template('reset_password.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+### Explanation
+
+1. **Flask Routes**: There are two main routes: 
+   - `/reset_password_request` to initiate password reset and send the email.
+   - `/reset_password/<token>` to handle the password reset form when the user clicks the email link.
+
+2. **Security**: The `URLSafeTimedSerializer` is used to generate a secure token that includes user email. This token is valid for 3600 seconds (1 hour).
+
+3. **Email Sending**: We're using `flask_mail` to send an email containing the password reset link.
+
+4. **Templates**: You'll need `reset_password_request.html` for the email form and `reset_password.html` for the password update form.
+
+5. **Mock Database**: A simple dictionary is used to simulate a user database.
+
+Remember to replace email configurations with valid credentials and ensure that Flask secret keys and mail passwords are kept secure, ideally using environment variables.
