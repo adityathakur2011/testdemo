@@ -15,23 +15,44 @@ jobs:
   call-api:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine API Endpoint
+      - name: 🧠 Map Selection to API Endpoint
         id: map
         run: |
-          echo "🧠 Selected action: '${{ github.event.inputs.endpoint }}'"
+          echo "📥 Selected Knowron Action: '${{ github.event.inputs.endpoint }}'"
           
-          # Map human-friendly input to actual API endpoint
           if [[ "${{ github.event.inputs.endpoint }}" == "Knowron Find Bugs" ]]; then
             echo "endpoint=users" >> $GITHUB_OUTPUT
+            echo "🔧 Mapping to endpoint: /users"
           elif [[ "${{ github.event.inputs.endpoint }}" == "Knowron Create Documentation" ]]; then
             echo "endpoint=posts" >> $GITHUB_OUTPUT
+            echo "📝 Mapping to endpoint: /posts"
           else
-            echo "❌ Unknown option selected"
+            echo "❌ Unknown selection!"
             exit 1
-          fi
 
-      - name: Call DummyJSON API
+      - name: 🔗 Call API and Display Response
         run: |
           URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
-          echo "🔗 Calling URL: $URL"
-          curl --fail -X GET "$URL"
+          echo "🌐 Calling API at: $URL"
+          
+          RESPONSE=$(curl --fail -s -X GET "$URL")
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to call API"
+            exit 1
+          fi
+          
+          echo "✅ API call successful!"
+          echo "📦 Raw Response:"
+          echo "$RESPONSE"
+
+          echo ""
+          echo "🧾 Pretty-Printed Response (first 20 lines):"
+          echo "$RESPONSE" | jq '.' | head -n 20
+          
+        env:
+          # Install jq for pretty printing
+          JQ_PATH: /usr/bin/jq
+
+      - name: 📦 Install jq (if not preinstalled)
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
