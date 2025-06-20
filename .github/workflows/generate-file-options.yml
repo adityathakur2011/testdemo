@@ -1,3 +1,62 @@
+# name: Call API For Respective Selection
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       endpoint:
+#         description: 'Select the Knowron action to perform'
+#         required: true
+#         type: choice
+#         options:
+#           - Knowron Find Bugs
+#           - Knowron Create Documentation
+
+# jobs:
+#   call-api:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: 🧠 Map Selection to API Endpoint
+#         id: map
+#         run: |
+#           echo "📥 Selected Knowron Action: '${{ github.event.inputs.endpoint }}'"
+          
+#           if [[ "${{ github.event.inputs.endpoint }}" == "Knowron Find Bugs" ]]; then
+#             echo "endpoint=users" >> $GITHUB_OUTPUT
+#             echo "🔧 Mapped to endpoint: /users"
+#           elif [[ "${{ github.event.inputs.endpoint }}" == "Knowron Create Documentation" ]]; then
+#             echo "endpoint=posts" >> $GITHUB_OUTPUT
+#             echo "📝 Mapped to endpoint: /posts"
+#           else
+#             echo "❌ Unknown selection!"
+#             exit 1
+#           fi
+
+#       - name: 📦 Install jq for JSON formatting
+#         run: |
+#           sudo apt-get update && sudo apt-get install -y jq
+
+#       - name: 🔗 Call API and Show Structured Response
+#         run: |
+#           URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
+#           echo "🌐 Calling API at: $URL"
+
+#           RESPONSE=$(curl --fail -s -X GET "$URL")
+#           if [ $? -ne 0 ]; then
+#             echo "❌ API call failed"
+#             exit 1
+#           fi
+          
+#           echo "✅ API Response (Structured):"
+#           echo "$RESPONSE" | jq '.'
+
+
+
+
+
+
+
+
+
 name: Call API For Respective Selection
 
 on:
@@ -14,37 +73,64 @@ on:
 jobs:
   call-api:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🧠 Map Selection to API Endpoint
-        id: map
+      - name: 📥 Download Code File Content from GitHub
+        id: fetch_code
         run: |
-          echo "📥 Selected Knowron Action: '${{ github.event.inputs.endpoint }}'"
+          RAW_URL="https://raw.githubusercontent.com/adityathakur2011/testdemo/main/feature/SCRUM-9579"
+          echo "🌐 Downloading code from: $RAW_URL"
           
-          if [[ "${{ github.event.inputs.endpoint }}" == "Knowron Find Bugs" ]]; then
-            echo "endpoint=users" >> $GITHUB_OUTPUT
-            echo "🔧 Mapped to endpoint: /users"
-          elif [[ "${{ github.event.inputs.endpoint }}" == "Knowron Create Documentation" ]]; then
-            echo "endpoint=posts" >> $GITHUB_OUTPUT
-            echo "📝 Mapped to endpoint: /posts"
-          else
-            echo "❌ Unknown selection!"
+          CODE=$(curl --fail -s "$RAW_URL")
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to fetch file content"
             exit 1
           fi
+
+          # Escape the code string to be safely used in JSON (quote escaping)
+          ESCAPED_CODE=$(jq -Rn --arg code "$CODE" '$code')
+
+          echo "code=$ESCAPED_CODE" >> $GITHUB_OUTPUT
+          echo "✅ Code content fetched and escaped"
 
       - name: 📦 Install jq for JSON formatting
         run: |
           sudo apt-get update && sudo apt-get install -y jq
 
+      - name: 🧠 Construct API Payload
+        id: build_payload
+        run: |
+          FILE_NAME="feature/SCRUM-9579"
+          LANGUAGE="python"
+          CODE=${{ steps.fetch_code.outputs.code }}
+
+          # Build payload and escape properly for use in next step
+          PAYLOAD=$(jq -n \
+            --arg file_name "$FILE_NAME" \
+            --arg code "$CODE" \
+            --arg language "$LANGUAGE" \
+            '{file_name: $file_name, code: $code, language: $language}')
+
+          echo "payload=$PAYLOAD" >> $GITHUB_OUTPUT
+          echo "📦 Payload constructed"
+
       - name: 🔗 Call API and Show Structured Response
         run: |
-          URL="https://dummyjson.com/${{ steps.map.outputs.endpoint }}"
+          URL="https://crewaiagent-bqcbdqe0fkgchphb.eastus-01.azurewebsites.net/findBugVsCode"
           echo "🌐 Calling API at: $URL"
 
-          RESPONSE=$(curl --fail -s -X GET "$URL")
+          echo "📤 Sending Payload:"
+          echo '${{ steps.build_payload.outputs.payload }}' | jq '.'
+
+          RESPONSE=$(curl --fail -s -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -d '${{ steps.build_payload.outputs.payload }}')
+
           if [ $? -ne 0 ]; then
             echo "❌ API call failed"
             exit 1
           fi
-          
+
           echo "✅ API Response (Structured):"
           echo "$RESPONSE" | jq '.'
+
