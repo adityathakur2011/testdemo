@@ -55,7 +55,6 @@
 
 
 
-
 name: Call API For Respective Selection
 
 on:
@@ -74,52 +73,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Install jq
+      - name: 📦 Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: 📄 Download code file and escape for JSON
+      - name: 📄 Fetch and escape file content
         id: fetch_code
         run: |
           RAW_URL="https://raw.githubusercontent.com/adityathakur2011/testdemo/main/feature/SCRUM-9579"
-          echo "📥 Downloading code from: $RAW_URL"
+          echo "📥 Fetching code from: $RAW_URL"
 
           CODE=$(curl --fail -s "$RAW_URL")
           if [ $? -ne 0 ]; then
-            echo "❌ Failed to download code"
+            echo "❌ Failed to fetch file"
             exit 1
           fi
 
-          # Use jq to escape the code block properly into a JSON-safe string
+          # Escape multiline code string for JSON using jq
           ESCAPED_CODE=$(jq -n --arg code "$CODE" '$code')
-          
-          echo "code=$ESCAPED_CODE" >> $GITHUB_OUTPUT
 
-      - name: 🧠 Construct Payload
+          echo "escaped_code=$ESCAPED_CODE" >> $GITHUB_OUTPUT
+
+      - name: 🧠 Build JSON Payload Safely
         id: build_payload
         run: |
-          FILE_NAME="feature/SCRUM-9579"
-          LANGUAGE="python"
-          CODE=${{ steps.fetch_code.outputs.code }}
+          echo "🔧 Building JSON payload..."
 
-          # Build payload as JSON string
-          PAYLOAD=$(jq -n \
-            --arg file_name "$FILE_NAME" \
-            --arg code "$CODE" \
-            --arg language "$LANGUAGE" \
-            '{file_name: $file_name, code: $code, language: $language}')
+          jq -n \
+            --arg file_name "feature/SCRUM-9579" \
+            --arg code ${{ steps.fetch_code.outputs.escaped_code }} \
+            --arg language "python" \
+            '{file_name: $file_name, code: $code, language: $language}' > payload.json
 
-          echo "payload=$PAYLOAD" >> $GITHUB_OUTPUT
+          echo "✅ Payload built:"
+          cat payload.json
 
-      - name: 🔗 Call API and Show Structured Response
+      - name: 🔗 Call POST API
         run: |
-          URL="https://crewaiagent-bqcbdqe0fkgchphb.eastus-01.azurewebsites.net/findBugVsCode"
-          echo "🌐 Calling API: $URL"
+          echo "🌐 Calling POST API..."
 
-          echo '${{ steps.build_payload.outputs.payload }}' | jq '.'
-
-          RESPONSE=$(curl --fail -s -X POST "$URL" \
+          RESPONSE=$(curl --fail -s -X POST "https://crewaiagent-bqcbdqe0fkgchphb.eastus-01.azurewebsites.net/findBugVsCode" \
             -H "Content-Type: application/json" \
-            -d '${{ steps.build_payload.outputs.payload }}')
+            -d @payload.json)
 
           if [ $? -ne 0 ]; then
             echo "❌ API call failed"
