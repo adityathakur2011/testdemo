@@ -54,7 +54,6 @@
 
 
 
-
 name: Call API For Respective Selection
 
 on:
@@ -90,14 +89,11 @@ jobs:
 
           # Escape multiline code string for JSON using jq
           ESCAPED_CODE=$(jq -n --arg code "$CODE" '$code')
-
           echo "escaped_code=$ESCAPED_CODE" >> $GITHUB_OUTPUT
 
       - name: 🧠 Build JSON Payload Safely
         id: build_payload
         run: |
-          echo "🔧 Building JSON payload..."
-
           jq -n \
             --arg file_name "feature/SCRUM-9579" \
             --arg code ${{ steps.fetch_code.outputs.escaped_code }} \
@@ -108,6 +104,7 @@ jobs:
           cat payload.json
 
       - name: 🔗 Call POST API
+        id: call_api
         run: |
           echo "🌐 Calling POST API..."
 
@@ -120,5 +117,20 @@ jobs:
             exit 1
           fi
 
-          echo "✅ API Response:"
-          echo "$RESPONSE" | jq '.'
+          echo "$RESPONSE" > response.json
+
+          echo "✅ Raw API Response:"
+          cat response.json | jq '.'
+
+      - name: 🪄 Format and Show Report
+        run: |
+          echo "📄 Extracting and formatting bug report..."
+
+          # Extract the report string and pretty-print line by line
+          REPORT=$(jq -r '.report' response.json)
+
+          echo "-------------------------------------"
+          echo "$REPORT" | while IFS= read -r line; do
+            echo "🔹 $line"
+          done
+          echo "-------------------------------------"
