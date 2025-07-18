@@ -1,0 +1,53 @@
+```javascript
+/**
+ * Function to calculate the percentage of claims submitted without data mismatches.
+ * 
+ * @param {Array} claims - An array of claim objects that potentially have mismatches.
+ *                          Each claim object is expected to have a 'hasMismatch' property.
+ * 
+ * @returns {number} - The percentage of claims without data mismatches.
+ */
+function calculateNoMismatchPercentage(claims) {
+    // Validate that the input is an array
+    if (!Array.isArray(claims)) {
+        throw new Error('The input should be an array of claims');
+    }
+
+    // Calculate the total number of claims
+    const totalClaims = claims.length;
+
+    // If there are no claims, return 0 as the percentage
+    if (totalClaims === 0) return 0;
+
+    // Calculate the number of claims without mismatches
+    const noMismatchClaims = claims.filter(claim => !claim.hasMismatch).length;
+
+    // Calculate the percentage of claims without mismatches
+    const noMismatchPercentage = (noMismatchClaims / totalClaims) * 100;
+
+    // Return the percentage rounded to two decimal places for readability
+    return parseFloat(noMismatchPercentage.toFixed(2));
+}
+
+// Example usage:
+const claimsData = [
+    { id: 1, hasMismatch: false },
+    { id: 2, hasMismatch: true },
+    { id: 3, hasMismatch: false },
+    { id: 4, hasMismatch: false }
+];
+
+const percentage = calculateNoMismatchPercentage(claimsData);
+console.log(`Percentage of claims without mismatches: ${percentage}%`);
+// Output should be: Percentage of claims without mismatches: 75.00%
+```
+
+This JavaScript code defines a function `calculateNoMismatchPercentage` that takes an array of claim objects and calculates the percentage of claims that do not have any data mismatches. Each claim object is expected to have a Boolean property `hasMismatch` indicating whether there is a mismatch or not.
+
+- The function first checks if the input is an array and throws an error if it is not.
+- Then it calculates the total number of claims.
+- If there are no claims, it returns 0 directly to avoid division by zero.
+- The number of claims without mismatches is calculated using `Array.filter()`.
+- The percentage is then computed, rounded to two decimal places for readability, and returned.
+
+Lastly, an example usage has been provided to demonstrate how the function can be used, along with expected output.
