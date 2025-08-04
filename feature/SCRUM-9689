@@ -1,0 +1,59 @@
+HTTPException, Request, status, Form
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+import re
+import time
+
+app = FastAPI()
+
+# Simulated user database
+users_db = {
+    "testUser": "password123",
+    "specialUser": "#$password!@123"
+}
+
+# Pydantic model for login input
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+# Simple function to check for SQL injection attempt (basic example)
+def contains_sql_injection(value: str) -> bool:
+    # Very basic pattern checking — for demo only
+    pattern = re.compile(r"('|--|;|/\*|\*/| or | OR )", re.IGNORECASE)
+    return bool(pattern.search(value))
+
+@app.post("/login")
+async def login(request: Request):
+    form = await request.form()
+    username = form.get("username", "").strip()
+    password = form.get("password", "").strip()
+
+    # Simulate network latency (for testing TC007)
+    # For example: if header X-Test-Slow-Network is set, delay response
+    if request.headers.get("X-Test-Slow-Network") == "true":
+        time.sleep(6)  # Delay >5 seconds to simulate slow network
+
+    # Validate empty fields
+    if not username:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": "Username is required."})
+
+    if not password:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": "Password is required."})
+
+    # Check for SQL injection attempts in username or password
+    if contains_sql_injection(username) or contains_sql_injection(password):
+        # Here, we just reject the login attempt without specifying details
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": "Invalid username or password."})
+
+    # Check credentials
+    stored_password = users_db.get(username)
+    if not stored_password or stored_password != password:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"error": "Invalid username or password."})
+
+    # Successful login
+    return {"message": "Login successful", "redirect_url": "/dashboard"}
+
+@app.get("/dashboard")
+async def dashboard():
+    return {"message": "Welcome to the dashboard"}
